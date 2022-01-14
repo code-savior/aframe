@@ -1,17 +1,254 @@
+
 <!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8">
-    <title>360&deg; Image</title>
-    <meta name="description" content="360&deg; Image - A-Frame">
-    <script src="../../../dist/aframe-master.js"></script>
+    <title>Kandao Creator</title>
+    <meta name="description" content="Kandao Creator | 无门槛交互媒体创作工具,VR漫游创作工具">
+    <!-- <script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script> -->
+    <script src="../../../dist/aframe-v1.2.0.js"></script>
+    <script src="../../js/play-on-click.js"></script>
+    <script src="../../js/hide-on-play.js"></script>
+    <script src="https://unpkg.com/aframe-event-set-component@5/dist/aframe-event-set-component.min.js"></script>
+    <script src="https://unpkg.com/aframe-layout-component@5.3.0/dist/aframe-layout-component.min.js"></script>
+    <script src="https://unpkg.com/aframe-template-component@3.2.1/dist/aframe-template-component.min.js"></script>
+    <script src="https://unpkg.com/aframe-proxy-event-component@2.1.0/dist/aframe-proxy-event-component.min.js"></script>
+    
+    <script src="js/api.js"></script>
+    <script src="js/project.js"></script>
+
+    <!-- Image link template to be reused. -->
+    <script id="link" type="text/html">
+      <!-- <a-entity class="link"
+        geometry="primitive: plane; height: 1; width: 1"
+        material="shader: flat; src: ${thumb}"
+        event-set__mouseenter="scale: 1.2 1.2 1"
+        event-set__mouseleave="scale: 1 1 1"
+        event-set__click="_target: #image-360; _delay: 300; material.src: ${src}"
+        proxy-event="event: click; to: #image-360; as: fade"
+        sound="on: click; src: #click-sound"></a-entity> -->
+      <a-image class="link"
+        src="${thumb}"        
+        event-set__mouseenter="scale: 1.2 1.2 1"
+        event-set__mouseleave="scale: 1 1 1"
+        event-set__click="_target: #image-360; _delay: 300; material.src: ${src}"
+        proxy-event="event: click; to: #image-360; as: fade"
+        sound="on: click; src: #click-sound"></a-image>
+    </script>
+
+    <script id="hotspot" type="text/html">
+      <a-entity>
+        <a-text font="kelsonsans" value="${title}" width="6" align="center" position="0 0.5 0"></a-text>
+        <a-entity class="link"
+          geometry="primitive: plane; height: 1; width: 1"
+          material="shader: flat; src: ${thumb}; transparent: true;"
+          event-set__mouseenter="scale: 1.2 1.2 1"
+          event-set__mouseleave="scale: 1 1 1"
+          proxy-event="event: click; to: ${sky}; as: fade"
+          sound="on: click; src: #click-sound"
+          position="0 -0.5 0"></a-entity>
+      </a-entity>
+    </script>
+
   </head>
   <body>
-    <a-scene>
-      <a-sky src="puydesancy.jpg" rotation="0 -130 0"></a-sky>
+    <script>
+      AFRAME.registerComponent('hotspot', {
+        schema: {
+          sceneid: {type: 'string'}
+        },
 
-      <a-text font="kelsonsans" value="Puy de Sancy, France" width="6" position="-2.5 0.25 -1.5"
-              rotation="0 15 0"></a-text>
+        init: function () {
+          this.el.addEventListener('click', this.clickHandler);
+        },
+
+        remove: function () {
+          this.el.removeEventListener('click', this.clickHandler);
+        },
+
+        clickHandler: function (event) {
+          lastscene = currentscene;
+          const sceneid = this.components.hotspot.data.sceneid;
+          currentscene = getSceneFromProject (sceneid);
+          if (lastscene.type !== currentscene.type){
+            if (lastscene.type === 'video') {
+              clearVidoSky();
+            }
+            if (lastscene.type === 'photo') {
+              clearPhotoSky();
+            }
+          }
+          clearHotspot();
+          render();
+        },
+      });
+    </script>
+
+    <a-scene>
+      <a-assets>
+        <audio id="click-sound" crossorigin="anonymous" src="https://cdn.aframe.io/360-image-gallery-boilerplate/audio/click.ogg"></audio>
+
+        <video id="video"
+                autoplay loop
+                crossorigin="anonymous"
+                playsinline webkit-playsinline>
+        </video>
+      </a-assets>
+
+      <!-- 360-degree image. -->
+      <a-sky id="photo-sky" radius="10" visible="false"
+             rotation="0 -90 0"
+             animation__fade="property: components.material.material.color; type: color; from: #FFF; to: #000; dur: 300; startEvents: fade"
+             animation__fadeback="property: components.material.material.color; type: color; from: #000; to: #FFF; dur: 300; startEvents: animationcomplete__fade"></a-sky>
+
+      <a-videosphere id="video-sky" radius="10" visible="false"
+        rotation="0 -90 0" src="#video"
+        animation__fade="property: components.material.material.color; type: color; from: #FFF; to: #000; dur: 300; startEvents: fade"
+        animation__fadeback="property: components.material.material.color; type: color; from: #000; to: #FFF; dur: 300; startEvents: animationcomplete__fade">
+      </a-videosphere>
+
+      <!-- Image links. -->
+      <a-entity id="hotspots" layout="type: line; margin: 1.5" position="0 1 -4">
+        <!-- <a-entity hotspot="sceneid: sceneid1" template="src: #link" data-src="#p1" data-thumb="#p1-thumb"></a-entity>
+        <a-entity hotspot="sceneid: sceneid2" template="src: #link" data-src="#p2" data-thumb="#p2-thumb"></a-entity> -->
+      </a-entity>
+
+      <!-- <a-entity template="src: #hotspot" data-src="#p2" data-thumb="#p2-thumb" data-title="你好世界" position="-2 1 -4"></a-entity> -->
+
+      <!-- <a-text font="kelsonsans" value="Puy de Sancy, France" width="6" position="-2.5 0.25 -1.5"
+        rotation="0 15 0" align="center"></a-text> -->
+
+      <!-- Camera + cursor. -->
+      <a-entity camera look-controls="reverseMouseDrag: true;">
+        <a-cursor
+          id="cursor"
+          animation__click="property: scale; startEvents: click; easing: easeInCubic; dur: 150; from: 0.1 0.1 0.1; to: 1 1 1"
+          animation__fusing="property: scale; startEvents: fusing; easing: easeInCubic; dur: 1500; from: 1 1 1; to: 0.1 0.1 0.1"
+          animation__mouseleave="property: scale; startEvents: mouseleave; easing: easeInCubic; dur: 500; to: 1 1 1"
+          event-set__mouseenter="_event: mouseenter; color: #26dede"
+          event-set__mouseleave="_event: mouseleave; color: black"
+          raycaster="objects: .link"></a-cursor>
+        <a-entity visible="false" id="video-tip"
+          position="0 0 -1.5"
+          text="align:center;
+                width:6;
+                wrapCount:100;
+                color: white;
+                value: Click or tap to start video">
+        </a-entity>
+      </a-entity>
+
+      <!-- Hand controls -->
+      <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .link; lineColor: #26dede;"></a-entity>
+      <a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: .link;"></a-entity>
     </a-scene>
+
+    <script>
+      const API_7NIU = 'https://pre-cdata.kandao360.com';
+      var projectId = '';
+
+      var scene = document.querySelector('a-scene');
+      var lastscene;
+      var currentscene;
+
+      var hotspotContainer = document.querySelector('#hotspot-container');
+
+      // project = await fetchProjectInfo(projectId)
+
+      if (project.uuid) {
+
+        currentscene = getFirstScene ();
+        if (scene.hasLoaded) {
+          render();
+        } else {
+          scene.addEventListener('loaded', render);
+        }
+      } else {
+        console.log('404');
+        // const hrefArr = window.location.href.split('?');
+        // const href = `${hrefArr[0]}404`;
+        // window.location.href = href;
+      }
+
+      function getFirstScene () {
+        const sceneid = getFirstSceneid();
+        return getSceneFromProject(sceneid);
+      }
+
+      function render () {
+        createSky();
+        createHotspot();
+      }
+
+      function createSky () {
+        if (currentscene.type === 'photo'){
+          let sky = scene.querySelector('#photo-sky');
+          sky.setAttribute('src', currentscene.media);
+          sky.object3D.visible = true;
+        }else{
+          let video = scene.querySelector('#video');
+          video.setAttribute('src', currentscene.media);
+          let videoTip = scene.querySelector('#video-tip');
+          videoTip.setAttribute('hide-on-play', '#video');
+          videoTip.object3D.visible = true;
+          let sky = scene.querySelector('#video-sky');
+          sky.setAttribute('play-on-click', '');
+          sky.object3D.visible = true;
+        }
+      }
+
+      function clearPhotoSky () {
+        let sky = scene.querySelector('#photo-sky');
+        sky.object3D.visible = false;
+      }
+
+      function clearVidoSky () {
+        let video = scene.querySelector('#video');
+        video.pause();
+        video.removeAttribute('src');
+        let videoTip = scene.querySelector('#video-tip');
+        videoTip.removeAttribute('hide-on-play');
+        videoTip.object3D.visible = false;
+        let sky = scene.querySelector('#video-sky');
+        sky.removeAttribute('play-on-click');
+        sky.object3D.visible = false;
+      }
+
+      function createHotspot () {
+        var hotspotsEl = scene.querySelector('#hotspots');
+        currentscene.hotspots.forEach(function(hotspot, index) {
+          var entityEl = document.createElement('a-entity');
+          entityEl.setAttribute('class', 'hotspot');
+          entityEl.setAttribute('hotspot', {
+            sceneid: hotspot.sceneid,
+          });
+          entityEl.setAttribute('template', {
+            src: '#hotspot',
+          });
+          entityEl.setAttribute('data-thumb', hotspot.icon);
+          entityEl.setAttribute('data-title', hotspot.title);
+          entityEl.setAttribute('data-sky', currentscene.type === 'photo' ? '#photo-sky' : '#video-sky');
+          hotspotsEl.appendChild(entityEl);
+        });
+        setTimeout(function(){hotspotsEl.object3D.visible = true;}, 300);
+      }
+
+      function clearHotspotTitle () {
+        while (hotspotContainer.firstChild) {
+          hotspotContainer.removeChild(hotspotContainer.firstChild);
+        }
+      }
+
+      function clearHotspot () {
+        var hotspotsEl = scene.querySelector('#hotspots');
+        hotspotsEl.object3D.visible = false;
+        var els = hotspotsEl.querySelectorAll('.hotspot');
+        for (var i = 0; i < els.length; i++) {
+          const entityEl = els[i];
+          console.log('remove', entityEl);
+          entityEl.parentNode.removeChild(entityEl);
+        }
+      }
+    </script>
   </body>
 </html>
