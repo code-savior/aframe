@@ -38,15 +38,13 @@
 
     <script id="hotspot" type="text/html">
       <a-entity>
-        <a-text font="kelsonsans" value="${title}" width="6" align="center" position="0 0.5 0"></a-text>
-        <a-entity class="link"
-          geometry="primitive: plane; height: 1; width: 1"
-          material="shader: flat; src: ${thumb}; transparent: true;"
+        <a-text font="kelsonsans" value="${title}" width="10" align="center" position="0 1 0"></a-text>
+        <a-image class="link"
+          src="${thumb}"
           event-set__mouseenter="scale: 1.2 1.2 1"
           event-set__mouseleave="scale: 1 1 1"
           proxy-event="event: click; to: ${sky}; as: fade"
-          sound="on: click; src: #click-sound"
-          position="0 -0.5 0"></a-entity>
+          sound="on: click; src: #click-sound"></a-image>
       </a-entity>
     </script>
 
@@ -60,6 +58,7 @@
 
         init: function () {
           this.el.addEventListener('click', this.clickHandler);
+          this.el.object3D.lookAt(0, 0, 0);
         },
 
         remove: function () {
@@ -79,6 +78,8 @@
             }
           }
           clearHotspot();
+          clearPhotoEmbed();
+          clearVideoEmbed();
           render();
         },
       });
@@ -93,10 +94,16 @@
                 crossorigin="anonymous"
                 playsinline webkit-playsinline>
         </video>
+
+        <video id="video-embed-0" autoplay loop="true"></video>
+        <video id="video-embed-1" autoplay loop="true"></video>
+        <video id="video-embed-2" autoplay loop="true"></video>
+        <video id="video-embed-3" autoplay loop="true"></video>
+        <video id="video-embed-4" autoplay loop="true"></video>
       </a-assets>
 
       <!-- 360-degree image. -->
-      <a-sky id="photo-sky" radius="10" visible="false"
+      <a-sky id="photo-sky" radius="1000" visible="false"
              rotation="0 -90 0"
              animation__fade="property: components.material.material.color; type: color; from: #FFF; to: #000; dur: 300; startEvents: fade"
              animation__fadeback="property: components.material.material.color; type: color; from: #000; to: #FFF; dur: 300; startEvents: animationcomplete__fade"></a-sky>
@@ -108,9 +115,17 @@
       </a-videosphere>
 
       <!-- Image links. -->
-      <a-entity id="hotspots" layout="type: line; margin: 1.5" position="0 1 -4">
+      <a-entity id="hotspots">
         <!-- <a-entity hotspot="sceneid: sceneid1" template="src: #link" data-src="#p1" data-thumb="#p1-thumb"></a-entity>
         <a-entity hotspot="sceneid: sceneid2" template="src: #link" data-src="#p2" data-thumb="#p2-thumb"></a-entity> -->
+      </a-entity>
+
+      <!-- Image embeds. -->
+      <a-entity id="photo-embeds">
+      </a-entity>
+
+      <!-- Image embeds. -->
+      <a-entity id="video-embeds">
       </a-entity>
 
       <!-- <a-entity template="src: #hotspot" data-src="#p2" data-thumb="#p2-thumb" data-title="你好世界" position="-2 1 -4"></a-entity> -->
@@ -119,28 +134,32 @@
         rotation="0 15 0" align="center"></a-text> -->
 
       <!-- Camera + cursor. -->
-      <a-entity camera look-controls="reverseMouseDrag: true;">
-        <a-cursor
-          id="cursor"
-          animation__click="property: scale; startEvents: click; easing: easeInCubic; dur: 150; from: 0.1 0.1 0.1; to: 1 1 1"
-          animation__fusing="property: scale; startEvents: fusing; easing: easeInCubic; dur: 1500; from: 1 1 1; to: 0.1 0.1 0.1"
-          animation__mouseleave="property: scale; startEvents: mouseleave; easing: easeInCubic; dur: 500; to: 1 1 1"
-          event-set__mouseenter="_event: mouseenter; color: #26dede"
-          event-set__mouseleave="_event: mouseleave; color: black"
-          raycaster="objects: .link"></a-cursor>
-        <a-entity visible="false" id="video-tip"
-          position="0 0 -1.5"
-          text="align:center;
-                width:6;
-                wrapCount:100;
-                color: white;
-                value: Click or tap to start video">
+      <a-entity id="rig" position="0 -1.6 0">
+        <a-entity camera look-controls="reverseMouseDrag: true;" position="0 1.6 0">
+          <a-cursor
+            id="cursor"
+            animation__click="property: scale; startEvents: click; easing: easeInCubic; dur: 150; from: 0.1 0.1 0.1; to: 1 1 1"
+            animation__fusing="property: scale; startEvents: fusing; easing: easeInCubic; dur: 1500; from: 1 1 1; to: 0.1 0.1 0.1"
+            animation__mouseleave="property: scale; startEvents: mouseleave; easing: easeInCubic; dur: 500; to: 1 1 1"
+            event-set__mouseenter="_event: mouseenter; color: #26dede"
+            event-set__mouseleave="_event: mouseleave; color: black"
+            raycaster="objects: .link"></a-cursor>
+          <a-entity visible="false" id="video-tip"
+            position="0 0 -1.5"
+            text="align:center;
+                  width:6;
+                  wrapCount:100;
+                  color: white;
+                  value: Click or tap to start video">
+          </a-entity>
         </a-entity>
       </a-entity>
 
       <!-- Hand controls -->
-      <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .link; lineColor: #26dede;"></a-entity>
-      <a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: .link;"></a-entity>
+      <a-entity id="rig-hand" position="0 -1.6 0">
+        <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .link; lineColor: #26dede;"></a-entity>
+        <a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: .link;"></a-entity>
+      </a-entity>
     </a-scene>
 
     <script>
@@ -148,6 +167,7 @@
       var projectId = '';
 
       var scene = document.querySelector('a-scene');
+      
       var lastscene;
       var currentscene;
 
@@ -178,6 +198,8 @@
       function render () {
         createSky();
         createHotspot();
+        createPhotoEmbed();
+        createVideoEmbed();
       }
 
       function createSky () {
@@ -216,9 +238,8 @@
 
       function createHotspot () {
         var hotspotsEl = scene.querySelector('#hotspots');
-        currentscene.hotspots.forEach(function(hotspot, index) {
+        currentscene.hotspots.forEach(function(hotspot) {
           var entityEl = document.createElement('a-entity');
-          entityEl.setAttribute('class', 'hotspot');
           entityEl.setAttribute('hotspot', {
             sceneid: hotspot.sceneid,
           });
@@ -228,25 +249,77 @@
           entityEl.setAttribute('data-thumb', hotspot.icon);
           entityEl.setAttribute('data-title', hotspot.title);
           entityEl.setAttribute('data-sky', currentscene.type === 'photo' ? '#photo-sky' : '#video-sky');
+          const p = new THREE.Vector3().setFromSphericalCoords(10, hotspot.pos_pitch, hotspot.pos_yaw);
+          // entityEl.setAttribute('scale', {x: 0.1, y: 0.1, z: 0.1});
+          entityEl.setAttribute('position', {x: p.x, y: p.y, z: p.z});
           hotspotsEl.appendChild(entityEl);
         });
         setTimeout(function(){hotspotsEl.object3D.visible = true;}, 300);
       }
 
-      function clearHotspotTitle () {
-        while (hotspotContainer.firstChild) {
-          hotspotContainer.removeChild(hotspotContainer.firstChild);
-        }
-      }
-
       function clearHotspot () {
         var hotspotsEl = scene.querySelector('#hotspots');
         hotspotsEl.object3D.visible = false;
-        var els = hotspotsEl.querySelectorAll('.hotspot');
-        for (var i = 0; i < els.length; i++) {
-          const entityEl = els[i];
-          console.log('remove', entityEl);
-          entityEl.parentNode.removeChild(entityEl);
+
+        clearAllChild(hotspotsEl);
+      }
+
+      function createPhotoEmbed () {
+        var photoEmbedsEl = scene.querySelector('#photo-embeds');
+        currentscene.photoEmbeds.forEach(function(embed) {
+          var entityEl = document.createElement('a-image');
+          entityEl.setAttribute('src', embed.media);
+          entityEl.setAttribute('width', 3);
+          entityEl.setAttribute('height', 2);
+          entityEl.setAttribute('side', 'front');
+          entityEl.object3D.rotation.y = THREE.Math.degToRad(-90);
+          photoEmbedsEl.appendChild(entityEl);
+        });
+        setTimeout(function(){photoEmbedsEl.object3D.visible = true;}, 300);
+      }
+
+      function clearPhotoEmbed () {
+        var photoEmbedsEl = scene.querySelector('#photo-embeds');
+        photoEmbedsEl.object3D.visible = false;
+
+        clearAllChild(photoEmbedsEl);
+      }
+
+      function createVideoEmbed () {
+        let embedsEl = scene.querySelector('#video-embeds');
+        currentscene.videoEmbeds.forEach(function(embed, index) {
+          const id = `#video-embed-${index}`;
+          let video = scene.querySelector(id);
+          video.setAttribute('src', embed.media);
+
+          let entityEl = document.createElement('a-video');
+          entityEl.setAttribute('src', id);
+          entityEl.setAttribute('width', 3);
+          entityEl.setAttribute('height', 2);
+          entityEl.setAttribute('side', 'front');
+          entityEl.object3D.rotation.y = THREE.Math.degToRad(180);
+          embedsEl.appendChild(entityEl);
+        });
+        setTimeout(function(){embedsEl.object3D.visible = true;}, 300);
+      }
+
+      function clearVideoEmbed () {
+        var embedsEl = scene.querySelector('#video-embeds');
+        embedsEl.object3D.visible = false;
+
+        clearAllChild(embedsEl);
+
+        lastscene.videoEmbeds.forEach(function(embed, index) {
+          const id = `#video-embed-${index}`;
+          let video = scene.querySelector(id);
+          video.pause();
+          video.removeAttribute('src');
+        });
+      }
+
+      function clearAllChild (element) {
+        while (element.firstChild) {
+          element.removeChild(element.firstChild);
         }
       }
     </script>
