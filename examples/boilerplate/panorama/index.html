@@ -51,6 +51,11 @@
   </head>
   <body>
     <script>
+      AFRAME.registerComponent('embed', {
+        init: function () {
+          this.el.object3D.lookAt(0, 0, 0);
+        },
+      });
       AFRAME.registerComponent('hotspot', {
         schema: {
           sceneid: {type: 'string'}
@@ -58,7 +63,6 @@
 
         init: function () {
           this.el.addEventListener('click', this.clickHandler);
-          this.el.object3D.lookAt(0, 0, 0);
         },
 
         remove: function () {
@@ -237,9 +241,11 @@
       }
 
       function createHotspot () {
+        const R = 10;
         var hotspotsEl = scene.querySelector('#hotspots');
         currentscene.hotspots.forEach(function(hotspot) {
           var entityEl = document.createElement('a-entity');
+          entityEl.setAttribute('embed', '');
           entityEl.setAttribute('hotspot', {
             sceneid: hotspot.sceneid,
           });
@@ -249,7 +255,7 @@
           entityEl.setAttribute('data-thumb', hotspot.icon);
           entityEl.setAttribute('data-title', hotspot.title);
           entityEl.setAttribute('data-sky', currentscene.type === 'photo' ? '#photo-sky' : '#video-sky');
-          const p = new THREE.Vector3().setFromSphericalCoords(10, hotspot.pos_pitch, hotspot.pos_yaw);
+          const p = new THREE.Vector3().setFromSphericalCoords(R, hotspot.pos_pitch, hotspot.pos_yaw);
           // entityEl.setAttribute('scale', {x: 0.1, y: 0.1, z: 0.1});
           entityEl.setAttribute('position', {x: p.x, y: p.y, z: p.z});
           hotspotsEl.appendChild(entityEl);
@@ -265,17 +271,33 @@
       }
 
       function createPhotoEmbed () {
+        const R = 20;
         var photoEmbedsEl = scene.querySelector('#photo-embeds');
         currentscene.photoEmbeds.forEach(function(embed) {
+          const widthAndheight = getEmbedWidthAndHeight(R, embed.width, embed.height);
           var entityEl = document.createElement('a-image');
+          entityEl.setAttribute('embed', '');
           entityEl.setAttribute('src', embed.media);
-          entityEl.setAttribute('width', 3);
-          entityEl.setAttribute('height', 2);
+          entityEl.setAttribute('width', widthAndheight.width);
+          entityEl.setAttribute('height', widthAndheight.height);
           entityEl.setAttribute('side', 'front');
-          entityEl.object3D.rotation.y = THREE.Math.degToRad(-90);
+
+          const p = new THREE.Vector3().setFromSphericalCoords(R, embed.pos_pitch, embed.pos_yaw);
+          // entityEl.setAttribute('scale', {x: 0.1, y: 0.1, z: 0.1});
+          entityEl.setAttribute('position', {x: p.x, y: p.y, z: p.z});
+
           photoEmbedsEl.appendChild(entityEl);
         });
         setTimeout(function(){photoEmbedsEl.object3D.visible = true;}, 300);
+      }
+
+      function getEmbedWidthAndHeight(r, _width, _height) {
+        const width = (2*Math.PI*r*_width*90)/(360*2000);
+        const height = (width*_height)/_width;
+        return {
+          width,
+          height
+        };
       }
 
       function clearPhotoEmbed () {

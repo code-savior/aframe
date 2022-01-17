@@ -51,7 +51,7 @@ var project = {
             "pos_pitch": -50.6346549987793,
             "pos_yaw": 142.374267578125,
             "resized_embed_media_height": 422,
-            "resized_embed_media_path": "resized/embed/45f15f63f5a74ec1b777f4e5c3bd8e1e/75a5c5c326504b52a68df86db06796cd.jpg",
+            "resized_embed_media_path": "resize-1.jpg",
             "resized_embed_media_width": 632,
             "source_stage": {
                 "uuid": "6bec0a0ed3f740f18631790310b3a952"
@@ -81,7 +81,7 @@ var project = {
             "pos_pitch": -74.64857482910156,
             "pos_yaw": 142.10189819335938,
             "resized_embed_media_height": 422,
-            "resized_embed_media_path": "resized/embed/2ed3ee86412b4b66a68ab398e077976b/75a5c5c326504b52a68df86db06796cd.jpg",
+            "resized_embed_media_path": "resize-2.jpg",
             "resized_embed_media_width": 632,
             "source_stage": {
                 "uuid": "6bec0a0ed3f740f18631790310b3a952"
@@ -423,11 +423,33 @@ function getScenePhotoEmbeds(sceneid) {
     });
 
     return embeds.map(function(embed){
+        const media = getPhotoEmbedMedia(embed);
+        const positon = convertPosition({pos_yaw: embed.pos_yaw, pos_pitch: embed.pos_pitch});
+        return {
+            media: media.media,
+            width: media.width,
+            height: media.height,
+            pos_yaw: positon.yaw,
+            pos_pitch: positon.pitch,
+        }
+    });
+}
+
+function getPhotoEmbedMedia(embed){
+    if(embed.resized_embed_media_path){
+        return {
+            media: `medias/${embed.resized_embed_media_path}`,
+            width: embed.resized_embed_media_width,
+            height: embed.resized_embed_media_height,
+        };
+    }else{
         const media = getMedia(embed.embed_media.uuid);
         return {
             media: `medias/${media.path}`,
-        }
-    });
+            width: media.width,
+            height: media.height,
+        };
+    }
 }
 
 function getSceneVideoEmbeds(sceneid) {
