@@ -116,7 +116,7 @@
              animation__fade="property: components.material.material.color; type: color; from: #FFF; to: #000; dur: 300; startEvents: fade"
              animation__fadeback="property: components.material.material.color; type: color; from: #000; to: #FFF; dur: 300; startEvents: animationcomplete__fade"></a-sky>
 
-      <a-videosphere id="video-sky" radius="10" visible="false"
+      <a-videosphere id="video-sky" radius="1000" visible="false"
         rotation="0 -90 0" src="#video"
         animation__fade="property: components.material.material.color; type: color; from: #FFF; to: #000; dur: 300; startEvents: fade"
         animation__fadeback="property: components.material.material.color; type: color; from: #000; to: #FFF; dur: 300; startEvents: animationcomplete__fade">
@@ -220,7 +220,7 @@
           let sky = scene.querySelector('#photo-sky');
           sky.setAttribute('src', currentscene.media);
           sky.object3D.visible = true;
-        }else{
+        }else if(currentscene.type === 'video'){
           let video = scene.querySelector('#video');
           video.setAttribute('src', currentscene.media);
           let videoTip = scene.querySelector('#video-tip');

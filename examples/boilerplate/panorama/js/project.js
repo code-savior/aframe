@@ -217,7 +217,8 @@ var project = {
             "target_stage": {
                 "uuid": "5ba494a4f74940feb18a83ad70a46679"
             },
-            "title": "<div style=\" padding: 5px;background-color: rgba(0, 0, 0, 0.3);border-radius: 4px;font-family: Microsoft YaHei;font-size: 28px;color: #ffffff; \">room.jpg</div>",
+            // "title": "<div style=\" padding: 5px;background-color: rgba(0, 0, 0, 0.3);border-radius: 4px;font-family: Microsoft YaHei;font-size: 28px;color: #ffffff; \">room.jpg</div>",
+            "title": "room",
             "title_visible": true,
             "uuid": "ebb5314e9e9245d6b38dfbe0545b4d32",
             "visible": true,
@@ -543,7 +544,7 @@ function convertEmbed(embeds){
 }
 
 function getEmbedMedia(embed){
-    if(embed.resized_embed_media_path){
+    if(embed.embed_type !== 5 && embed.resized_embed_media_path){
         return {
             media: `medias/${embed.resized_embed_media_path}`,
             width: embed.resized_embed_media_width,
@@ -552,16 +553,16 @@ function getEmbedMedia(embed){
     }else{
         const media = getMedia(embed.embed_media.uuid);
         return {
-            media: `medias/${media.path}`,
-            width: media.width,
-            height: media.height,
+            media: embed.embed_type !== 5 ? `medias/${media.path}` : media.path,
+            width: embed.embed_type !== 5 ? media.width : embed.resized_embed_media_width,
+            height: embed.embed_type !== 5 ? media.height : embed.resized_embed_media_height,
         };
     }
 }
 
 function getSceneVideoEmbeds(sceneid) {
     const embeds = project.embeds.filter(function(embed) {
-        return embed.source_stage.uuid === sceneid && embed.embed_type === 0 && embed.visible === true
+        return embed.source_stage.uuid === sceneid && (embed.embed_type === 0 || embed.embed_type === 5) && embed.visible === true
     });
     return convertEmbed(embeds);
 }
@@ -588,16 +589,8 @@ function getSceneMedia(sceneid) {
         return stage.uuid === sceneid
     })[0];
     const media = getMedia(scene.media.uuid);
-    let type;
-    switch (media.type) {
-        case 'Photo':
-            type = 'photo';
-            break;
-        case 'Video':
-            type = 'video';
-            break;
-    };
-    const path = `medias/${media.path}`;
+    const path =  media.type === 'Live' ? media.path : `medias/${media.path}`;
+    let type = media.type === 'Video' || media.type === 'Live' ? 'video' : 'photo';
     return {
         type,
         path,
