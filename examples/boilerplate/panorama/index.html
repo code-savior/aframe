@@ -18,22 +18,12 @@
     <script src="js/project.js"></script>
 
     <!-- Image link template to be reused. -->
-    <script id="link" type="text/html">
-      <!-- <a-entity class="link"
-        geometry="primitive: plane; height: 1; width: 1"
-        material="shader: flat; src: ${thumb}"
-        event-set__mouseenter="scale: 1.2 1.2 1"
-        event-set__mouseleave="scale: 1 1 1"
-        event-set__click="_target: #image-360; _delay: 300; material.src: ${src}"
-        proxy-event="event: click; to: #image-360; as: fade"
-        sound="on: click; src: #click-sound"></a-entity> -->
+    <script id="audio" type="text/html">
       <a-image class="link"
-        src="${thumb}"        
+        src="assets/icon/embed/audio.png"
         event-set__mouseenter="scale: 1.2 1.2 1"
         event-set__mouseleave="scale: 1 1 1"
-        event-set__click="_target: #image-360; _delay: 300; material.src: ${src}"
-        proxy-event="event: click; to: #image-360; as: fade"
-        sound="on: click; src: #click-sound"></a-image>
+        sound="on: click; src: ${media}"></a-image>
     </script>
 
     <script id="hotspot" type="text/html">
@@ -52,8 +42,15 @@
   <body>
     <script>
       AFRAME.registerComponent('embed', {
+        schema: {
+          rotation: {type: 'vec3'}
+        },
         init: function () {
           this.el.object3D.lookAt(0, 0, 0);
+          // console.log('this.data.rotation', this.data.rotation);
+          // this.el.object3D.rotation.x += -this.data.rotation.y;
+          // this.el.object3D.rotation.y += -this.data.rotation.x;
+          // this.el.object3D.rotation.z += this.data.rotation.z;
         },
       });
       AFRAME.registerComponent('hotspot', {
@@ -84,6 +81,7 @@
           clearHotspot();
           clearPhotoEmbed();
           clearVideoEmbed();
+          clearAudioEmbed();
           render();
         },
       });
@@ -99,11 +97,17 @@
                 playsinline webkit-playsinline>
         </video>
 
-        <video id="video-embed-0" autoplay loop="true"></video>
-        <video id="video-embed-1" autoplay loop="true"></video>
-        <video id="video-embed-2" autoplay loop="true"></video>
-        <video id="video-embed-3" autoplay loop="true"></video>
-        <video id="video-embed-4" autoplay loop="true"></video>
+        <video id="video-embed-0" crossorigin="anonymous" autoplay loop="true"></video>
+        <video id="video-embed-1" crossorigin="anonymous" autoplay loop="true"></video>
+        <video id="video-embed-2" crossorigin="anonymous" autoplay loop="true"></video>
+        <video id="video-embed-3" crossorigin="anonymous" autoplay loop="true"></video>
+        <video id="video-embed-4" crossorigin="anonymous" autoplay loop="true"></video>
+
+        <audio id="audio-embed-0" crossorigin="anonymous"></audio>
+        <audio id="audio-embed-1" crossorigin="anonymous"></audio>
+        <audio id="audio-embed-2" crossorigin="anonymous"></audio>
+        <audio id="audio-embed-3" crossorigin="anonymous"></audio>
+        <audio id="audio-embed-4" crossorigin="anonymous"></audio>
       </a-assets>
 
       <!-- 360-degree image. -->
@@ -128,8 +132,12 @@
       <a-entity id="photo-embeds">
       </a-entity>
 
-      <!-- Image embeds. -->
+      <!-- Video embeds. -->
       <a-entity id="video-embeds">
+      </a-entity>
+
+      <!-- Audio embeds. -->
+      <a-entity id="audio-embeds">
       </a-entity>
 
       <!-- <a-entity template="src: #hotspot" data-src="#p2" data-thumb="#p2-thumb" data-title="你好世界" position="-2 1 -4"></a-entity> -->
@@ -204,6 +212,7 @@
         createHotspot();
         createPhotoEmbed();
         createVideoEmbed();
+        createAudioEmbed();
       }
 
       function createSky () {
@@ -243,7 +252,7 @@
       function createHotspot () {
         const R = 10;
         var hotspotsEl = scene.querySelector('#hotspots');
-        currentscene.hotspots.forEach(function(hotspot) {
+        currentscene.hotspots?.forEach(function(hotspot) {
           var entityEl = document.createElement('a-entity');
           entityEl.setAttribute('embed', '');
           entityEl.setAttribute('hotspot', {
@@ -255,7 +264,7 @@
           entityEl.setAttribute('data-thumb', hotspot.icon);
           entityEl.setAttribute('data-title', hotspot.title);
           entityEl.setAttribute('data-sky', currentscene.type === 'photo' ? '#photo-sky' : '#video-sky');
-          const p = new THREE.Vector3().setFromSphericalCoords(R, hotspot.pos_pitch, hotspot.pos_yaw);
+          const p = new THREE.Vector3().setFromSphericalCoords(R, hotspot.position.pitch, hotspot.position.yaw);
           // entityEl.setAttribute('scale', {x: 0.1, y: 0.1, z: 0.1});
           entityEl.setAttribute('position', {x: p.x, y: p.y, z: p.z});
           hotspotsEl.appendChild(entityEl);
@@ -273,16 +282,16 @@
       function createPhotoEmbed () {
         const R = 20;
         var photoEmbedsEl = scene.querySelector('#photo-embeds');
-        currentscene.photoEmbeds.forEach(function(embed) {
+        currentscene.photoEmbeds?.forEach(function(embed) {
           const widthAndheight = getEmbedWidthAndHeight(R, embed.width, embed.height);
           var entityEl = document.createElement('a-image');
-          entityEl.setAttribute('embed', '');
+          entityEl.setAttribute('embed', {rotation: `${embed.rotation.yaw} ${embed.rotation.pitch} ${embed.rotation.roll}`});
           entityEl.setAttribute('src', embed.media);
           entityEl.setAttribute('width', widthAndheight.width);
           entityEl.setAttribute('height', widthAndheight.height);
           entityEl.setAttribute('side', 'front');
 
-          const p = new THREE.Vector3().setFromSphericalCoords(R, embed.pos_pitch, embed.pos_yaw);
+          const p = new THREE.Vector3().setFromSphericalCoords(R, embed.position.pitch, embed.position.yaw);
           // entityEl.setAttribute('scale', {x: 0.1, y: 0.1, z: 0.1});
           entityEl.setAttribute('position', {x: p.x, y: p.y, z: p.z});
 
@@ -292,7 +301,7 @@
       }
 
       function getEmbedWidthAndHeight(r, _width, _height) {
-        const width = (2*Math.PI*r*_width*90)/(360*2000);
+        const width = ((_width/2)*r)/(2000/2)*2;
         const height = (width*_height)/_width;
         return {
           width,
@@ -308,18 +317,25 @@
       }
 
       function createVideoEmbed () {
+        const R = 20;
         let embedsEl = scene.querySelector('#video-embeds');
-        currentscene.videoEmbeds.forEach(function(embed, index) {
+        currentscene.videoEmbeds?.forEach(function(embed, index) {
+          const widthAndheight = getEmbedWidthAndHeight(R, embed.width, embed.height);
           const id = `#video-embed-${index}`;
           let video = scene.querySelector(id);
           video.setAttribute('src', embed.media);
 
           let entityEl = document.createElement('a-video');
+          entityEl.setAttribute('embed', {rotation: `${embed.rotation.yaw} ${embed.rotation.pitch} ${embed.rotation.roll}`});
           entityEl.setAttribute('src', id);
-          entityEl.setAttribute('width', 3);
-          entityEl.setAttribute('height', 2);
+          entityEl.setAttribute('width', widthAndheight.width);
+          entityEl.setAttribute('height', widthAndheight.height);
           entityEl.setAttribute('side', 'front');
-          entityEl.object3D.rotation.y = THREE.Math.degToRad(180);
+
+          const p = new THREE.Vector3().setFromSphericalCoords(R, embed.position.pitch, embed.position.yaw);
+          // entityEl.setAttribute('scale', {x: 0.1, y: 0.1, z: 0.1});
+          entityEl.setAttribute('position', {x: p.x, y: p.y, z: p.z});
+
           embedsEl.appendChild(entityEl);
         });
         setTimeout(function(){embedsEl.object3D.visible = true;}, 300);
@@ -331,11 +347,56 @@
 
         clearAllChild(embedsEl);
 
-        lastscene.videoEmbeds.forEach(function(embed, index) {
+        lastscene.videoEmbeds?.forEach(function(embed, index) {
           const id = `#video-embed-${index}`;
           let video = scene.querySelector(id);
           video.pause();
           video.removeAttribute('src');
+        });
+      }
+
+      function createAudioEmbed () {
+        const R = 10;
+        let embedsEl = scene.querySelector('#audio-embeds');
+        currentscene.audioEmbeds?.forEach(function(embed, index) {
+          const id = `#audio-embed-${index}`;
+          let audio = scene.querySelector(id);
+          audio.setAttribute('src', embed.media);
+          audio.volume = embed.volume;
+          audio.loop = embed.loop;
+
+          var entityEl = document.createElement('a-entity');
+          entityEl.setAttribute('embed', '');
+          // entityEl.setAttribute('hotspot', {
+          //   sceneid: hotspot.sceneid,
+          // });
+          entityEl.setAttribute('template', {
+            src: '#audio',
+          });
+          entityEl.setAttribute('data-media', id);
+
+          const p = new THREE.Vector3().setFromSphericalCoords(R, embed.position.pitch, embed.position.yaw);
+          // entityEl.setAttribute('scale', {x: 0.1, y: 0.1, z: 0.1});
+          entityEl.setAttribute('position', {x: p.x, y: p.y, z: p.z});
+
+          embedsEl.appendChild(entityEl);
+        });
+        setTimeout(function(){embedsEl.object3D.visible = true;}, 300);
+      }
+
+      function clearAudioEmbed () {
+        var embedsEl = scene.querySelector('#audio-embeds');
+        embedsEl.object3D.visible = false;
+
+        clearAllChild(embedsEl);
+
+        lastscene.audioEmbeds?.forEach(function(embed, index) {
+          const id = `#audio-embed-${index}`;
+          let audio = scene.querySelector(id);
+          audio.pause();
+          audio.removeAttribute('src');
+          audio.removeAttribute('volume');
+          audio.removeAttribute('loop');
         });
       }
 
