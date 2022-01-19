@@ -5,16 +5,14 @@
     <meta charset="utf-8">
     <title>Kandao Creator</title>
     <meta name="description" content="Kandao Creator | 无门槛交互媒体创作工具,VR漫游创作工具">
-    <!-- <script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script> -->
-    <script src="../../../dist/aframe-v1.2.0.js"></script>
-    <script src="../../js/play-on-click.js"></script>
-    <script src="../../js/hide-on-play.js"></script>
-    <script src="https://unpkg.com/aframe-event-set-component@5/dist/aframe-event-set-component.min.js"></script>
-    <script src="https://unpkg.com/aframe-layout-component@5.3.0/dist/aframe-layout-component.min.js"></script>
-    <script src="https://unpkg.com/aframe-template-component@3.2.1/dist/aframe-template-component.min.js"></script>
-    <script src="https://unpkg.com/aframe-proxy-event-component@2.1.0/dist/aframe-proxy-event-component.min.js"></script>
+    <script src="js/aframe-v1.2.0.js"></script>
+    <script src="js/play-on-click.js"></script>
+    <script src="js/hide-on-play.js"></script>
+    <script src="js/aframe-event-set-component.min.js"></script>
+    <script src="js/aframe-layout-component.min.js"></script>
+    <script src="js/aframe-template-component.min.js"></script>
+    <script src="js/aframe-proxy-event-component.min.js"></script>
     
-    <script src="js/api.js"></script>
     <script src="js/project.js"></script>
 
     <!-- Image link template to be reused. -->
@@ -175,8 +173,14 @@
     </a-scene>
 
     <script>
-      const API_7NIU = 'https://pre-cdata.kandao360.com';
-      var projectId = '';
+      projectId = getUrlParams('projectId');
+
+      function getUrlParams(key){
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const value = urlParams.get(key);
+        return value;
+      }
 
       var scene = document.querySelector('a-scene');
       
@@ -185,21 +189,39 @@
 
       var hotspotContainer = document.querySelector('#hotspot-container');
 
-      // project = await fetchProjectInfo(projectId)
+      const url = `${API_7NIU}/${projectId}/index.json`;
+      fetch(url)
+      .then(
+        function(response) {
+          if (response.status !== 200) {
+            console.log('Fetch Project Fail. Status Code: ' +
+              response.status);
+            goto404();
+            return;
+          }
 
-      if (project.uuid) {
+          response.json().then(function(data) {
+            console.log('project', data);
 
-        currentscene = getFirstScene ();
-        if (scene.hasLoaded) {
-          render();
-        } else {
-          scene.addEventListener('loaded', render);
+            project = data;
+            currentscene = getFirstScene ();
+            if (scene.hasLoaded) {
+              render();
+            } else {
+              scene.addEventListener('loaded', render);
+            }
+          });
         }
-      } else {
-        console.log('404');
-        // const hrefArr = window.location.href.split('?');
-        // const href = `${hrefArr[0]}404`;
-        // window.location.href = href;
+      )
+      .catch(function(err) {
+        console.log('Fetch Project Error :-S', err);
+        goto404();
+      });
+
+      function goto404(){
+        const hrefArr = window.location.href.split('vr');
+        const href = `${hrefArr[0]}404`;
+        window.location.href = href;
       }
 
       function getFirstScene () {
